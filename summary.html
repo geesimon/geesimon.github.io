@@ -15,11 +15,11 @@ h1 {
 div.tooltip {	
     position: absolute;			
     text-align: center;			
-    width: 60px;					
+    width: 120px;					
     height: 28px;					
     padding: 2px;				
     font: 12px sans-serif;		
-    background: lightsteelblue;	
+    background: #eee;	
     border: 0px;		
     border-radius: 8px;			
     pointer-events: none;			
@@ -45,9 +45,25 @@ var x = d3.scaleBand()
 var y = d3.scaleLinear()
     .rangeRound([height, 0]);
 
-var div = d3.select("body").append("div")	
+var tooltip = d3.select("body").append("div")	
     .attr("class", "tooltip")				
     .style("opacity", 0);
+
+tooltip.append("div")
+    .attr("class", "username")
+
+tooltip.append("div")
+    .attr("class", "username")
+
+tooltip.append("div")
+    .attr("class", "total_change")
+
+tooltip.append("div")
+    .attr("class", "project")
+
+tooltip.append("div")
+    .attr("class", "project_change")
+
 
 //var z = d3.scaleOrdinal()
 //    .range(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
@@ -80,16 +96,16 @@ d3.csv("gitwork.csv", function(d, i, columns) {
       .attr("y", function(d) { return y(d[1]); })
       .attr("height", function(d) { return y(d[0]) - y(d[1]); })
       .attr("width", x.bandwidth())
-      .on("mouseover", function(d) {		
-            div.transition()		
+      .on("mouseover", function(d) {
+            tooltip.select(".username").text(d.data.user);
+            tooltip.transition()		
                 .duration(200)
-                .style("opacity", .9);		
-            div.text(d.data.user)	
-                .style("left", (d3.event.pageX) + "px")		
-                .style("top", (d3.event.pageY - 28) + "px");	
+                .style("opacity", 1);
+            tooltip.style("left", (d3.event.pageX) + "px")		
+                .style("top", (d3.event.pageY - 28) + "px");
             })					
         .on("mouseout", function(d) {		
-            div.transition()		
+            tooltip.transition()		
                 .duration(500)		
                 .style("opacity", 0);	
         });
