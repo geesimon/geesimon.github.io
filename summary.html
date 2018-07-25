@@ -16,9 +16,9 @@ div.tooltip {
     position: absolute;			
     text-align: center;			
     width: 120px;					
-    height: 28px;					
+    height: 56px;					
     padding: 2px;				
-    font: 12px sans-serif;		
+    font: 10px sans-serif;		
     background: #eee;	
     border: 0px;		
     border-radius: 8px;			
@@ -52,8 +52,6 @@ var tooltip = d3.select("body").append("div")
 tooltip.append("div")
     .attr("class", "username")
 
-tooltip.append("div")
-    .attr("class", "username")
 
 tooltip.append("div")
     .attr("class", "total_change")
@@ -97,7 +95,10 @@ d3.csv("gitwork.csv", function(d, i, columns) {
       .attr("height", function(d) { return y(d[0]) - y(d[1]); })
       .attr("width", x.bandwidth())
       .on("mouseover", function(d) {
-            tooltip.select(".username").text(d.data.user);
+            tooltip.select(".username").text("Engineer:" + d.data.user);
+            tooltip.select(".total_change").text("Total changes:" + d["1"]);
+            tooltip.select(".project").text("Project:");
+            tooltip.select(".project_change").text("Project changes:");
             tooltip.transition()		
                 .duration(200)
                 .style("opacity", 1);
