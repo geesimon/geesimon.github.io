@@ -12,6 +12,19 @@ h1 {
   margin: 0.1em 0;
 }
 
+div.tooltip {	
+    position: absolute;			
+    text-align: center;			
+    width: 60px;					
+    height: 28px;					
+    padding: 2px;				
+    font: 12px sans-serif;		
+    background: lightsteelblue;	
+    border: 0px;		
+    border-radius: 8px;			
+    pointer-events: none;			
+}
+
 </style>
 <h1>Git Change Summary</h1>
 <svg width="960" height="500"></svg>
@@ -31,6 +44,10 @@ var x = d3.scaleBand()
 
 var y = d3.scaleLinear()
     .rangeRound([height, 0]);
+
+var div = d3.select("body").append("div")	
+    .attr("class", "tooltip")				
+    .style("opacity", 0);
 
 //var z = d3.scaleOrdinal()
 //    .range(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
@@ -62,7 +79,20 @@ d3.csv("gitwork.csv", function(d, i, columns) {
       .attr("x", function(d) { return x(d.data.user); })
       .attr("y", function(d) { return y(d[1]); })
       .attr("height", function(d) { return y(d[0]) - y(d[1]); })
-      .attr("width", x.bandwidth());
+      .attr("width", x.bandwidth())
+      .on("mouseover", function(d) {		
+            div.transition()		
+                .duration(200)		
+                .style("opacity", .9);		
+            div.html(formatTime(d.date) + "<br/>"  + d.close)	
+                .style("left", (d3.event.pageX) + "px")		
+                .style("top", (d3.event.pageY - 28) + "px");	
+            })					
+        .on("mouseout", function(d) {		
+            div.transition()		
+                .duration(500)		
+                .style("opacity", 0);	
+        });
 
   g.append("g")
       .attr("class", "axis")
