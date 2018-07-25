@@ -82,9 +82,9 @@ d3.csv("gitwork.csv", function(d, i, columns) {
       .attr("width", x.bandwidth())
       .on("mouseover", function(d) {		
             div.transition()		
-                .duration(200)		
+                .duration(200)
                 .style("opacity", .9);		
-            div.html(formatTime(d.date) + "<br/>"  + d.close)	
+            div.text(d.data.user)	
                 .style("left", (d3.event.pageX) + "px")		
                 .style("top", (d3.event.pageY - 28) + "px");	
             })					
