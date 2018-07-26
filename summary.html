@@ -12,25 +12,101 @@ h1 {
   margin: 0.1em 0;
 }
 
-div.tooltip {	
-    position: absolute;			
-    text-align: center;			
-    width: 120px;					
-    height: 56px;					
+.tooltip {	
+    position: absolute;
+    width: 160px;					
+    height: 38px;					
     padding: 2px;				
-    font: 10px sans-serif;		
-    background: #eee;	
-    border: 0px;		
-    border-radius: 8px;			
-    pointer-events: none;			
+    font: 12px 'Courier New', Courier, monospace;		
+    background: #fff;	
+    border-style: solid;
+    border-width: 2px;
+    border-color:lavender;		
+    pointer-events: none;
+    box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;	
 }
 
+.tooltip-key {
+    display:block;
+    float: left;
+    width: 40%;
+}
+
+.tooltip-value {
+    font-weight: bold;
+}
 </style>
 <h1>Git Change Summary</h1>
+<input type="range" min="1" max="150" step="50" id="nRadius">
 <svg width="960" height="500"></svg>
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script>
+//Tooltip for bar
+d3.tooltip = function () {
+    "use strict";
 
+    var tooltip_div = d3.select("body").append("div")	
+            .attr("class", "tooltip")				
+            .style("opacity", 0);
+    
+    tooltip_div.append("div")
+        .attr("class", "tooltip-key")
+        .text("Engineer:");
+
+    tooltip_div.append("div")
+        .attr("class", "tooltip-value")
+        .attr("id", "engineer_name");
+    
+    tooltip_div.append("div")
+        .attr("class", "tooltip-key")
+        .text("Project:");
+
+    tooltip_div.append("div")
+        .attr("class", "tooltip-value")
+        .attr("id", "project_name");
+
+    tooltip_div.append("div")
+        .attr("class", "tooltip-key")
+        .text("Changes:");
+
+    tooltip_div.append("div")
+        .attr("class", "tooltip-value")
+        .attr("id", "git_changes");
+    
+    function tooltip(){
+
+    }
+
+    tooltip.show = function(x, y, name, project, changes){
+        tooltip_div.select("#engineer_name").text(name);
+        tooltip_div.select("#project_name").text(project);
+        tooltip_div.select("#git_changes").text(changes);
+
+        tooltip_div.style("left", x + "px")		
+                .style("top", y + "px");
+
+        tooltip_div.transition()		
+                .duration(200)
+                .style("opacity", 0.9);
+    }
+
+    tooltip.hide = function(){
+        tooltip_div.transition()		
+                .duration(500)		
+                .style("opacity", 0);
+    }
+
+    tooltip.move = function(x, y){
+        tooltip_div.style("left", x + "px")		
+                .style("top", y + "px");
+    }
+
+    return tooltip;
+};
+</script>
+
+<script>
 var svg = d3.select("svg"),
     margin = {top: 20, right: 20, bottom: 100, left: 40},
     width = +svg.attr("width") - margin.left - margin.right,
@@ -45,23 +121,7 @@ var x = d3.scaleBand()
 var y = d3.scaleLinear()
     .rangeRound([height, 0]);
 
-var tooltip = d3.select("body").append("div")	
-    .attr("class", "tooltip")				
-    .style("opacity", 0);
-
-tooltip.append("div")
-    .attr("class", "username")
-
-
-tooltip.append("div")
-    .attr("class", "total_change")
-
-tooltip.append("div")
-    .attr("class", "project")
-
-tooltip.append("div")
-    .attr("class", "project_change")
-
+var tooltip = d3.tooltip();
 
 //var z = d3.scaleOrdinal()
 //    .range(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
@@ -87,6 +147,7 @@ d3.csv("gitwork.csv", function(d, i, columns) {
     .data(d3.stack().keys(keys)(data))
     .enter().append("g")
       .attr("fill", function(d) { return z(d.key); })
+      .attr("project", function(d) {return d.key;})
     .selectAll("rect")
     .data(function(d) { return d; })
     .enter().append("rect")
@@ -94,21 +155,15 @@ d3.csv("gitwork.csv", function(d, i, columns) {
       .attr("y", function(d) { return y(d[1]); })
       .attr("height", function(d) { return y(d[0]) - y(d[1]); })
       .attr("width", x.bandwidth())
-      .on("mouseover", function(d) {
-            tooltip.select(".username").text("Engineer:" + d.data.user);
-            tooltip.select(".total_change").text("Total changes:" + d["1"]);
-            tooltip.select(".project").text("Project:");
-            tooltip.select(".project_change").text("Project changes:");
-            tooltip.transition()		
-                .duration(200)
-                .style("opacity", 1);
-            tooltip.style("left", (d3.event.pageX) + "px")		
-                .style("top", (d3.event.pageY - 28) + "px");
+        .on("mouseover", function(d) {
+            tooltip.show(d3.event.pageX + 16, d3.event.pageY + 16, d.data.user, 
+                            d3.select(this.parentNode).attr("project"), d[1]-d[0])
             })					
-        .on("mouseout", function(d) {		
-            tooltip.transition()		
-                .duration(500)		
-                .style("opacity", 0);	
+        .on("mouseout", function(d) {
+            tooltip.hide();
+        })
+        .on("mousemove", function(d) {
+            tooltip.move(d3.event.pageX + 16, d3.event.pageY + 16);
         });
 
   g.append("g")
@@ -154,5 +209,6 @@ d3.csv("gitwork.csv", function(d, i, columns) {
       .attr("dy", "0.32em")
       .text(function(d) { return d; });
 });
+
 
 </script>
