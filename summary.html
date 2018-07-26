@@ -14,9 +14,7 @@ h1 {
 
 .tooltip {	
     position: absolute;
-    width: 160px;					
-    height: 38px;					
-    padding: 2px;				
+    padding: 4px;				
     font: 12px 'Courier New', Courier, monospace;		
     background: #fff;	
     border-style: solid;
@@ -28,17 +26,48 @@ h1 {
 }
 
 .tooltip-key {
-    display:block;
+    clear:left;
     float: left;
-    width: 40%;
+    width: 70px;
 }
 
 .tooltip-value {
+    float: left;
     font-weight: bold;
+}
+
+.month_picker {
+    padding: 8px;
+    border-style: solid;
+    border-width: 2px;
+    border-color: black;
+}
+.month_input{
+    display:inline;
+    color:black;
+}
+.month_header{
+    display:inline;
+    font-family: Arial, Helvetica, sans-serif;
+    color:black;
 }
 </style>
 <h1>Git Change Summary</h1>
-<input type="range" min="1" max="150" step="50" id="nRadius">
+<div class="month_picker">
+    <div class="month_header">Data from Months:</div>
+    <div class="month_input"><input type="checkbox" value="1">Jan</div>
+    <div class="month_input"><input type="checkbox" value="2">Feb</div>
+    <div class="month_input"><input type="checkbox" value="3">Mar</div>
+    <div class="month_input"><input type="checkbox" value="4">Apr</div>
+    <div class="month_input"><input type="checkbox" value="5">May</div>
+    <div class="month_input"><input type="checkbox" value="6">Jan</div>
+    <div class="month_input"><input type="checkbox" value="7">Jun</div>
+    <div class="month_input"><input type="checkbox" value="8">Jul</div>
+    <div class="month_input"><input type="checkbox" value="9">Aug</div>
+    <div class="month_input"><input type="checkbox" value="10">Sep</div>
+    <div class="month_input"><input type="checkbox" value="11">Nov</div>
+    <div class="month_input"><input type="checkbox" value="12">Dec</div>
+</div>
 <svg width="960" height="500"></svg>
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script>
@@ -106,6 +135,19 @@ d3.tooltip = function () {
 };
 </script>
 
+<script>
+d3.month_picker = function(refresh_fn) {
+    picker = d3.selectAll(".month_picker input")
+            .on("change", function(){
+                selected_month = [];
+                d3.selectAll(".month_picker input").each(function(){
+                    if(this.checked) selected_month.push(+this.value);
+                })
+                refresh_fn(selected_month)
+            })
+}
+</script>
+        
 <script>
 var svg = d3.select("svg"),
     margin = {top: 20, right: 20, bottom: 100, left: 40},
@@ -210,5 +252,9 @@ d3.csv("gitwork.csv", function(d, i, columns) {
       .text(function(d) { return d; });
 });
 
+function refreshData(){
+    
+}
 
+d3.month_picker(refreshData);
 </script>
