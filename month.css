@@ -1,0 +1,20 @@
+.month_picker {
+    padding: 8px;
+    border-style: solid;
+    border-width: 2px;
+    border-color: black;
+}
+.month_input{
+    display:inline;
+    color:black;
+    padding: 8px;
+}
+.month_header{
+    display:inline;
+    font-family: Arial, Helvetica, sans-serif;
+    color:black;
+}
+.month_brief{
+    display:inline;
+    color:black;
+}
