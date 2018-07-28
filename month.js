@@ -10,7 +10,7 @@ month_picker = function(div_id, refresh_fn) {
         .attr("class", "month_picker")
         .append("div")
             .attr("class", "month_header")
-            .text("Data from Months:");
+            .text("Data for Months:");
 
     d3.select("#" + div_id)
         .selectAll("input")
@@ -45,26 +45,66 @@ month_picker = function(div_id, refresh_fn) {
     }
 
     inputs.on("change", function(){
+         //Make sure at least one month is selected
+        if (picker.get_selects() == 0) {   
+            d3.select(this).property("checked", "true");
+        }
+
         refresh_fn();
     })
 
     return picker;
 }
 
-function sliceDataByMonth(data, months){
+function filterDataByMonth(data, months){
     var newData = [];
-    for (i = 0; i < data.length; i++){
-        record = data[i];
-        if (record.month in months){
-            for (j = 0; j < newData.length(); j++) {
-                if (record[i]["user"] == newData[j]["user"]) {
-                    for (var key in record[i]){
-                        newData[j][key] += +record[i][key];
+    var fieldNames = ["future_store", "s2b", "wumart-scm", "wz", "zt_1", "zt_2"];
+
+    for (var i = 0; i < data.length; i++){
+        if (months.indexOf(+data[i].month) >= 0){
+            for (var j = 0; j < newData.length; j++) {
+                if (data[i]["user"] == newData[j]["user"]) {
+                    for (var k in fieldNames) {
+                        newData[j][fieldNames[k]] += +data[i][fieldNames[k]];
                     }
+                    break;
+                }
+            }
+            if (j == newData.length){
+                newData.push({});
+                newData[j]["user"] = data[i]["user"]
+                for (var k in fieldNames) {
+                    newData[j][fieldNames[k]] = +data[i][fieldNames[k]];
                 }
             }
         }
     }
 
-    return data;
+    //Calculate total
+    for (i in newData){
+        newData[i]["total"] = 0;
+        for (j in fieldNames){
+            newData[i]["total"] += newData[i][fieldNames[j]];
+        }
+    }
+
+    newData.sort(function(a, b) { return b.total - a.total; });
+
+    //Remove too small changes
+    for (i = 0; i < newData.length; i++) {
+        if (newData[i].total < 100) break;
+    }
+    newData = newData.slice(0, i);
+
+    //Add "columns" property
+    newData["columns"] = ["user"];
+    for (i in fieldNames) newData["columns"].push(fieldNames[i]);
+
+    //Add "users" property
+    newData["users"] = []
+    for (i = 0; i < newData.length; i++) {
+         newData["users"].push(newData[i].user);
+    }
+
+    return newData;
 }

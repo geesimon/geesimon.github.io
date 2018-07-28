@@ -4,19 +4,29 @@
     <script src="month.js"></script>
     <link rel="stylesheet" type="text/css" href="month.css">
     <style>
+        body { font-size: 80%; font-family: 'Lucida Grande', Verdana, Arial, Sans-Serif; }
+        ul#tabs { list-style-type: none; margin: 30px 0 0 0; padding: 0 0 0.3em 0; }
+        ul#tabs li { display: inline; font-size: 1.2em;}
+        ul#tabs li a { color: #42454a; background-color: #dedbde; border: 1px solid #c9c3ba; border-bottom: none; padding: 0.3em; text-decoration: none; }
+        ul#tabs li a:hover { background-color: #f1f0ee; }
+        ul#tabs li a.selected { color: #000; background-color: #f1f0ee; font-weight: bold; padding: 0.7em 0.3em 0.38em 0.3em; }
+        div.tabContent { border: 1px solid #c9c3ba; padding: 0.5em; background-color: #f1f0ee; }
+        div.tabContent.hide { display: none; } 
+
+        .bar {
+            cursor: pointer;
+        }
         .axis .domain {
-        display: none;
+            display: none;
         }
 
         .summary_title {
             font: 24px 'Courier New', Courier, monospace;
             font-weight: bold;
         }
-        h1 {
-        font-size: 46px;
-        font-weight: 500;
-        letter-spacing: -1px;
-        margin: 0.1em 0;
+        
+        .arc {
+            cursor: pointer;
         }
 
         .tooltip {	
@@ -45,11 +55,19 @@
     </style>
 </head>
 <body>
+<ul id="tabs">
+    <li><a href="#engineer" class="selected">By Engineer</a></li>
+    <li><a href="#project">By Project</a></li>
+</ul>
 <div id="month_picker"></div>
-<svg width="960" height="500">
+<svg id="engineer_svg" width="960" height="500">
     <text class="summary_title" x=300 y=50>Git Change Summary</text>
 </svg>
+<svg id="project_svg" width="960" height="500">
+        <text class="summary_title" x=300 y=50>Project Git Change</text>
+    </svg>
 <script>
+
 //Tooltip for bar
 d3.tooltip = function () {
     "use strict";
@@ -114,27 +132,45 @@ d3.tooltip = function () {
 };
 </script>
 <script>
-var rawData, months_selector;
+var rawData, dispData, months_selector;
+var engineer_svg = d3.select("#engineer_svg");
+var project_svg = d3.select("#project_svg").attr("display", "none");
 
-function refreshChart(){
-    var months = months_selector.get_selects();
-    var data = sliceDataByMonth(rawData, months);
-    var keys = data.columns.slice(1);
+function refreshEngineerChart(){
+    var keys = dispData.columns.slice(1);
 
-    data.sort(function(a, b) { return b.total - a.total; });
-    x.domain(data.map(function(d) { return d.user; }));
-    y.domain([0, d3.max(data, function(d) { return d.total; })]).nice();
-    z.domain(keys);
+    engineer_svg.select("g").remove();
 
-    g.append("g")
+    var margin = {top: 60, right: 20, bottom: 100, left: 40},
+    canvas = engineer_svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    var width = +engineer_svg.attr("width") - margin.left - margin.right;
+    var height = +engineer_svg.attr("height") - margin.top - margin.bottom;
+
+    var x = d3.scaleBand()
+        .rangeRound([0, width])
+        .paddingInner(0.05)
+        .align(0.1);
+
+    var y = d3.scaleLinear()
+        .rangeRound([height, 0]);
+
+    var colour = d3.scaleOrdinal().range(d3.schemeCategory10);
+
+    x.domain(dispData.map(function(d) { return d.user; }));
+    y.domain([0, d3.max(dispData, function(d) { return d.total; })]).nice();
+    colour.domain(keys);
+
+    canvas.append("g")
     .selectAll("g")
-    .data(d3.stack().keys(keys)(data))
+    .data(d3.stack().keys(keys)(dispData))
     .enter().append("g")
-        .attr("fill", function(d) { return z(d.key); })
+        .attr("fill", function(d) { return colour(d.key); })
         .attr("project", function(d) {return d.key;})
     .selectAll("rect")
     .data(function(d) { return d; })
     .enter().append("rect")
+        .attr("class", "bar")
         .attr("x", function(d) { return x(d.data.user); })
         .attr("y", function(d) { return y(d[1]); })
         .attr("height", function(d) { return y(d[0]) - y(d[1]); })
@@ -150,7 +186,7 @@ function refreshChart(){
             tooltip.move(d3.event.pageX + 16, d3.event.pageY + 16);
         });
 
-    g.append("g")
+    canvas.append("g")
         .attr("class", "axis")
         .attr("transform", "translate(0," + height + ")")
         .call(d3.axisBottom(x))
@@ -160,73 +196,151 @@ function refreshChart(){
         .attr("dy", "-.55em")
         .attr("transform", "rotate(-90)" );
 
-    g.append("g")
+    canvas.append("g")
         .attr("class", "axis")
         .call(d3.axisLeft(y).ticks(null, "s"))
-        .append("text")
-        .attr("x", 2)
-        .attr("y", y(y.ticks().pop()) + 0.5)
-        .attr("dy", "0.32em")
-        .attr("fill", "#000")
-        .attr("font-weight", "bold")
-        .attr("text-anchor", "start")
-        .text("Git Changes");
+
+    var legend = canvas.append("g")
+                    .attr("font-family", "sans-serif")
+                    .attr("font-size", 10)
+                    .attr("text-anchor", "end")
+                    .selectAll("g")
+                    .data(keys.slice().reverse())
+                    .enter().append("g")
+                    .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+    legend.append("rect")
+            .attr("x", width - 19)
+            .attr("width", 19)
+            .attr("height", 19)
+            .attr("fill", colour);
+
+    legend.append("text")
+            .attr("x", width - 24)
+            .attr("y", 9.5)
+            .attr("dy", "0.32em")
+            .text(function(d) { return d; });
+}
+//https://codepen.io/MeredithU/pen/OVMjjK
+//http://bl.ocks.org/jsl6906/4a1b818b64847fb05d56
+function refreshProjectChart() {
+    var keys = dispData.users;
+
+    project_svg.select("g").remove();
+
+    var margin = {top: 60, right: 20, bottom: 100, left: 40},
+    canvas = project_svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    var width = +project_svg.attr("width") - margin.left - margin.right;
+    var height = +project_svg.attr("height") - margin.top - margin.bottom;
+
+    radius = Math.min(width, height) / 2;
+
+    // Define arc colours
+    var colour = d3.scaleOrdinal(d3.schemeCategory20);
+
+    // Define arc ranges
+    var arcText = d3.scaleOrdinal()
+    .range([0, width]);
+
+    // Determine size of arcs
+    var arc = d3.arc()
+    .innerRadius(radius - 130)
+    .outerRadius(radius - 10);
+
+    // Create the donut pie chart layout
+    var pie = d3.pie()
+    .value(function (d) { return d["future_store"]; })
+    .sort(null);
+
+    g = canvas.append("g")
+        .attr("transform", "translate(" + radius + "," + radius + ")");
+
+    // Define inner circle
+    g.append("circle")
+    .attr("cx", 0)
+    .attr("cy", 0)
+    .attr("r", 100)
+    .attr("fill", "#333") ;
+
+    // Calculate SVG paths and fill in the colours
+    var arc_path = g.selectAll(".arc")
+                    .data(pie(dispData))
+                    .enter().append("g")
+                    .attr("class", "arc")
+            
+    // Append the path to each g
+    arc_path.append("path")
+        .attr("d", arc)
+        .attr("fill", function(d, i) {
+            return colour(i);
+        });
+
+    
+    var legend = canvas.append("g")
+                    .attr("font-family", "sans-serif")
+                    .attr("font-size", 10)
+                    .attr("text-anchor", "end")
+                    .selectAll("g")
+                    .data(keys.slice().reverse())
+                    .enter().append("g")
+                    .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+    legend.append("rect")
+            .attr("x", width - 19)
+            .attr("width", 19)
+            .attr("height", 19)
+            .attr("fill", colour);
+
+    legend.append("text")
+            .attr("x", width - 24)
+            .attr("y", 9.5)
+            .attr("dy", "0.32em")
+            .text(function(d) { return d; });
 }
 </script>
 <script>
-months_selector = month_picker("month_picker", refreshChart)
+var tabs = d3.selectAll("#tabs a");
 
-var svg = d3.select("svg"),
-    margin = {top: 60, right: 20, bottom: 100, left: 40},
-    width = +svg.attr("width") - margin.left - margin.right,
-    height = +svg.attr("height") - margin.top - margin.bottom,
-    g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+tabs.on("click", function(){
+    if (d3.select(this).classed("selected")) return;
+    tabs.classed("selected", false);
+    d3.select(this).classed("selected", true);
 
-var x = d3.scaleBand()
-    .rangeRound([0, width])
-    .paddingInner(0.05)
-    .align(0.1);
+    switch (d3.select(this).attr("href")){
+        case "#engineer":
+            engineer_svg.attr("display", "block");
+            project_svg.attr("display", "none");
+            break;
+        case "#project": 
+            engineer_svg.attr("display", "none");
+            project_svg.attr("display", "block");
+            break;
+    }
+})
 
-var y = d3.scaleLinear()
-    .rangeRound([height, 0]);
+months_selector = month_picker("month_picker", function(){
+    var months = months_selector.get_selects();
+
+    dispData = filterDataByMonth(rawData, months);
+    refreshEngineerChart();
+    refreshProjectChart();
+})
 
 var tooltip = d3.tooltip();
 
-var z = d3.scaleOrdinal().range(d3.schemeCategory10);
-
-d3.csv("gitwork.csv", function(d, i, columns) {
-  for (i = 1, t = 0; i < columns.length; ++i) t += d[columns[i]] = +d[columns[i]];
-  d.total = t;
+d3.csv("gitwork_mon.csv", function(d, i, columns) {
+  //for (i = 1, t = 0; i < columns.length; ++i) t += d[columns[i]] = +d[columns[i]];
+  //d.total = t;
   return d;
 }, function(error, data) {
-  if (error) throw error;
+    if (error) throw error;
+    rawData = data;
+    var months = months_selector.get_selects();
+    dispData = filterDataByMonth(rawData, months);
 
-  rawData = data;
-  refreshChart();
-
-  var keys = data.columns.slice(1);
-  var legend = g.append("g")
-      .attr("font-family", "sans-serif")
-      .attr("font-size", 10)
-      .attr("text-anchor", "end")
-      .selectAll("g")
-      .data(keys.slice().reverse())
-      .enter().append("g")
-      .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
-
-  legend.append("rect")
-      .attr("x", width - 19)
-      .attr("width", 19)
-      .attr("height", 19)
-      .attr("fill", z);
-
-  legend.append("text")
-      .attr("x", width - 24)
-      .attr("y", 9.5)
-      .attr("dy", "0.32em")
-      .text(function(d) { return d; });
+    refreshEngineerChart();
+    refreshProjectChart();
 });
-
-
 </script>
 </body>
