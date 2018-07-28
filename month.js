@@ -1,3 +1,5 @@
+var fieldNames = ["future_store", "s2b", "wumart-scm", "wz", "zt_1", "zt_2"];
+
 month_picker = function(div_id, refresh_fn) {
     "use strict";
 
@@ -57,8 +59,7 @@ month_picker = function(div_id, refresh_fn) {
 }
 
 function filterDataByMonth(data, months){
-    var newData = [];
-    var fieldNames = ["future_store", "s2b", "wumart-scm", "wz", "zt_1", "zt_2"];
+    var newData = [];    
 
     for (var i = 0; i < data.length; i++){
         if (months.indexOf(+data[i].month) >= 0){
@@ -107,4 +108,28 @@ function filterDataByMonth(data, months){
     }
 
     return newData;
+}
+
+function getProjectData(data) {
+    var projectData = [];
+
+    //data.sort(function(a,b){return a.user > b.user;})
+    projectData["users"] = []
+    for (i = 0; i < data.length; i++) {
+        projectData["users"].push(data[i].user);
+    }
+    
+    for (var i = 0; i < fieldNames.length; i++){
+        projectData.push([]);
+        k = projectData.length - 1;
+        projectData[k].push(fieldNames[i]);
+
+        values = []
+        for (var j = 0; j < data.length; j++){
+            values.push(data[j][fieldNames[i]])
+        }
+        projectData[k].push(values);
+    }
+
+    return projectData;
 }

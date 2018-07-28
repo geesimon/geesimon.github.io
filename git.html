@@ -29,6 +29,10 @@
             cursor: pointer;
         }
 
+        .node text {
+            font: 10px 'Courier New', Courier, monospace;
+        }
+
         .tooltip {	
             position: absolute;
             padding: 4px;				
@@ -63,7 +67,7 @@
 <svg id="engineer_svg" width="960" height="500">
     <text class="summary_title" x=300 y=50>Git Change Summary</text>
 </svg>
-<svg id="project_svg" width="960" height="500">
+<svg id="project_svg" width="960" height="600">
         <text class="summary_title" x=300 y=50>Project Git Change</text>
     </svg>
 <script>
@@ -132,12 +136,13 @@ d3.tooltip = function () {
 };
 </script>
 <script>
-var rawData, dispData, months_selector;
+var rawData, engineerData, projectData;
+var months_selector;
 var engineer_svg = d3.select("#engineer_svg");
 var project_svg = d3.select("#project_svg").attr("display", "none");
 
 function refreshEngineerChart(){
-    var keys = dispData.columns.slice(1);
+    var keys = engineerData.columns.slice(1);
 
     engineer_svg.select("g").remove();
 
@@ -157,13 +162,13 @@ function refreshEngineerChart(){
 
     var colour = d3.scaleOrdinal().range(d3.schemeCategory10);
 
-    x.domain(dispData.map(function(d) { return d.user; }));
-    y.domain([0, d3.max(dispData, function(d) { return d.total; })]).nice();
+    x.domain(engineerData.map(function(d) { return d.user; }));
+    y.domain([0, d3.max(engineerData, function(d) { return d.total; })]).nice();
     colour.domain(keys);
 
     canvas.append("g")
     .selectAll("g")
-    .data(d3.stack().keys(keys)(dispData))
+    .data(d3.stack().keys(keys)(engineerData))
     .enter().append("g")
         .attr("fill", function(d) { return colour(d.key); })
         .attr("project", function(d) {return d.key;})
@@ -224,7 +229,7 @@ function refreshEngineerChart(){
 //https://codepen.io/MeredithU/pen/OVMjjK
 //http://bl.ocks.org/jsl6906/4a1b818b64847fb05d56
 function refreshProjectChart() {
-    var keys = dispData.users;
+    var keys = projectData.users;
 
     project_svg.select("g").remove();
 
@@ -234,55 +239,84 @@ function refreshProjectChart() {
     var width = +project_svg.attr("width") - margin.left - margin.right;
     var height = +project_svg.attr("height") - margin.top - margin.bottom;
 
-    radius = Math.min(width, height) / 2;
-
-    // Define arc colours
     var colour = d3.scaleOrdinal(d3.schemeCategory20);
 
-    // Define arc ranges
-    var arcText = d3.scaleOrdinal()
-    .range([0, width]);
-
-    // Determine size of arcs
-    var arc = d3.arc()
-    .innerRadius(radius - 130)
-    .outerRadius(radius - 10);
-
-    // Create the donut pie chart layout
+    var pack = d3.pack()
+                    .size([width, height])
+                    .padding(1.5);
+    
     var pie = d3.pie()
-    .value(function (d) { return d["future_store"]; })
-    .sort(null);
+                .value(function (d) { return d; })
+                .sort(null);
+        
+    var root = d3.hierarchy({children: projectData})
+                    .sum(function(d) { 
+                        if (d[1]) return d3.sum(d[1]); 
+                        else return 0;
+                    });
+    
+    var leaves = pack(root).leaves();
 
-    g = canvas.append("g")
-        .attr("transform", "translate(" + radius + "," + radius + ")");
+    canvas.selectAll(".node")
+        .data(leaves)
+        .enter().append("g")
+            .attr("class", "node")
+            .attr("transform", function(d) {
+                return "translate(" + d.x + "," + d.y + ")"; 
+            })
+            .selectAll(".arc")
+            .data(
+                function(d){
+                    var data = pie(d.data[1]);
+                    for (i = 0; i < data.length; i++) {
+                        data[i].radius = d.r;
+                        data[i].user = keys[i];
+                        data[i].project = d.data[0];
+                        data[i].changes = d.data[1][i];
+                    }
 
-    // Define inner circle
-    g.append("circle")
-    .attr("cx", 0)
-    .attr("cy", 0)
-    .attr("r", 100)
-    .attr("fill", "#333") ;
+                    return data;
+                })
+            .enter().append("g")
+            .attr("class", "arc")
+            .append("path")
+            .attr("d", function(d){
+                var arc = d3.arc()
+                            .innerRadius(0)
+                            .outerRadius(d.radius);
 
-    // Calculate SVG paths and fill in the colours
-    var arc_path = g.selectAll(".arc")
-                    .data(pie(dispData))
-                    .enter().append("g")
-                    .attr("class", "arc")
-            
-    // Append the path to each g
-    arc_path.append("path")
-        .attr("d", arc)
-        .attr("fill", function(d, i) {
-            return colour(i);
-        });
+                return arc(d);
+            })
+            .attr("fill", function(d, i){
+                return colour(d.user);
+                })
+            .on("mouseover",function(d){
+                    tooltip.show(d3.event.pageX + 16, d3.event.pageY + 16, d.user, 
+                                d.project, d.changes)
+            })
+            .on("mouseout", function(d) {
+                tooltip.hide();
+            })
+            .on("mousemove", function(d) {
+                tooltip.move(d3.event.pageX + 16, d3.event.pageY + 16);
+            });
 
     
+    canvas.selectAll(".node").append("text")
+        .data(leaves)
+        .attr("x", 0)
+        .attr("y", 0)
+        .attr("text-anchor", "middle")
+        .text(function(d){
+            return d.data[0];
+        })
+
     var legend = canvas.append("g")
                     .attr("font-family", "sans-serif")
                     .attr("font-size", 10)
                     .attr("text-anchor", "end")
                     .selectAll("g")
-                    .data(keys.slice().reverse())
+                    .data(keys)
                     .enter().append("g")
                     .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
 
@@ -296,7 +330,7 @@ function refreshProjectChart() {
             .attr("x", width - 24)
             .attr("y", 9.5)
             .attr("dy", "0.32em")
-            .text(function(d) { return d; });
+            .text(function(d) { return d; });                
 }
 </script>
 <script>
@@ -322,7 +356,8 @@ tabs.on("click", function(){
 months_selector = month_picker("month_picker", function(){
     var months = months_selector.get_selects();
 
-    dispData = filterDataByMonth(rawData, months);
+    engineerData = filterDataByMonth(rawData, months);
+    projectData = getProjectData(engineerData);
     refreshEngineerChart();
     refreshProjectChart();
 })
@@ -337,7 +372,8 @@ d3.csv("gitwork_mon.csv", function(d, i, columns) {
     if (error) throw error;
     rawData = data;
     var months = months_selector.get_selects();
-    dispData = filterDataByMonth(rawData, months);
+    engineerData = filterDataByMonth(rawData, months);
+    projectData = getProjectData(engineerData);
 
     refreshEngineerChart();
     refreshProjectChart();
