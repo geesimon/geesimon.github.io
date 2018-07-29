@@ -21,10 +21,13 @@
         }
 
         .summary_title {
-            font: 24px 'Courier New', Courier, monospace;
+            font: 24px 'Times New Roman', Times, serif;
             font-weight: bold;
         }
-        
+        .summary_subtitle {
+            font: 18px 'Times New Roman', Times, serif;
+        }
+
         .arc {
             cursor: pointer;
         }
@@ -65,10 +68,12 @@
 </ul>
 <div id="month_picker"></div>
 <svg id="engineer_svg" width="960" height="500">
-    <text class="summary_title" x=300 y=50>Git Change Summary</text>
+    <text class="summary_title" x=250 y=40>How much our engineer contribute</text>
+    <text class=".summary_subtitle" x=250 y=60>Use this chart to see who is top contributor of our team</text>
 </svg>
 <svg id="project_svg" width="960" height="600">
-        <text class="summary_title" x=300 y=50>Project Git Change</text>
+        <text class="summary_title" x=250 y=40>How much our project contribute</text>
+        <text class=".summary_subtitle" x=250 y=60>Use this chart to see which project is the busiest and who is the top contributor to this project.</text>
     </svg>
 <script>
 
