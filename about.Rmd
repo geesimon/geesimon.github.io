@@ -1,3 +1,11 @@
+---
+title: "Git Change Visualization"
+output:
+  html_document:
+    df_print: paged
+---
+
+
 Git is popular distributed version control system, my team (20+ software engineers) use git to store all projects source code. I would like to explore the idea that whether I can measure engineers’ and projects’ contribution based on git commits and changes. I wrote a Python program to collect git commit (23K+ commits) from all my projects (6 projects use 50+ git repositories) and stored such info in MySql table with following key columns:
 
 - `user`: user name
